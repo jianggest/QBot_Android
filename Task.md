@@ -40,7 +40,7 @@
   > 2. 实现一个方法 `sendMessageStream(history: List<MessageEntity>, prompt: String): Flow<String>`。
   > 3. 需要将本地的 `MessageEntity` 历史记录转换为 Gemini SDK 支持的 `Content` 格式，以实现上下文感知。”
 
-### ⬜ Task 2.2: 构建聊天 UI 与 ViewModel (UI 层)
+### [x] Task 2.2: 构建聊天 UI 与 ViewModel (UI 层)
 * **Agent 指令**：
   > “1. 创建 `ChatViewModel`，持有当前的会话状态（List<Message>）和输入框状态。
   > 2. 实现发送消息逻辑：保存用户消息到 Room -> 调用 Repository 获取流式响应 -> 实时更新 UI 状态 -> 接收完毕后保存 AI 消息到 Room。

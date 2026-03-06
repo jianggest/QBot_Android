@@ -9,6 +9,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.happyfamliy.qbot.ui.chat.ChatScreen
+import com.happyfamliy.qbot.ui.chat.ChatViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,17 +24,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("QBot API setup complete")
+                    val chatViewModel: ChatViewModel = hiltViewModel()
+                    ChatScreen(viewModel = chatViewModel)
                 }
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello \$name!",
-        modifier = modifier
-    )
 }
