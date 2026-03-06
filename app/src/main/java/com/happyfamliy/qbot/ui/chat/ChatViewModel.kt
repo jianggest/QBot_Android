@@ -7,6 +7,7 @@ import com.happyfamliy.qbot.data.local.dao.SessionDao
 import com.happyfamliy.qbot.data.local.entity.MessageEntity
 import com.happyfamliy.qbot.data.local.entity.SessionEntity
 import com.happyfamliy.qbot.domain.repository.GeminiRepository
+import com.happyfamliy.qbot.domain.usecase.FactExtractionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val sessionDao: SessionDao,
     private val messageDao: MessageDao,
-    private val geminiRepository: GeminiRepository
+    private val geminiRepository: GeminiRepository,
+    private val factExtractionUseCase: FactExtractionUseCase
 ) : ViewModel() {
 
     private var currentSessionId: Long? = null
@@ -78,12 +80,29 @@ class ChatViewModel @Inject constructor(
                 // Done streaming. Save AI message to DB
                 val aiMsg = MessageEntity(sessionId = sessionId, role = "model", content = currentStreamingText)
                 messageDao.insertMessage(aiMsg)
+
+                // Trigger background fact extraction silently
+                launchBackgroundExtraction(sessionId)
                 
             } catch (e: Exception) {
                 updateStreamingMessage(currentStreamingText + "\n[System Error]: \${e.message}")
             } finally {
                 reloadMessagesFromDb(sessionId)
                 _isGenerating.value = false
+            }
+        }
+    }
+
+    private fun launchBackgroundExtraction(sessionId: Long) {
+        viewModelScope.launch {
+            try {
+                // Get fully updated history
+                val history = messageDao.getMessagesForSession(sessionId).first()
+                // the extraction is silently executed, we discard output here
+                // in reality we'd save to DB (addressed in Task 3.2)
+                factExtractionUseCase(history)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

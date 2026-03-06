@@ -1,25 +1,17 @@
 package com.happyfamliy.qbot.data.repository
 
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
 import com.happyfamliy.qbot.data.local.entity.MessageEntity
+import com.happyfamliy.qbot.domain.repository.ChatMessage
 import com.happyfamliy.qbot.domain.repository.GeminiRepository
+import com.happyfamliy.qbot.domain.repository.GenerativeModelWrapper
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 class GeminiRepositoryImpl(
-    private val generativeModel: GenerativeModel
+    private val chatWrapper: GenerativeModelWrapper
 ) : GeminiRepository {
 
     override fun sendMessageStream(history: List<MessageEntity>, prompt: String): Flow<String> {
-        val chatHistory = history.map { message ->
-            content(role = message.role) {
-                text(message.content)
-            }
-        }
-        val chat = generativeModel.startChat(chatHistory)
-        return chat.sendMessageStream(prompt).map { response ->
-            response.text ?: ""
-        }
+        val chatHistory = history.map { ChatMessage(role = it.role, content = it.content) }
+        return chatWrapper.startChatAndSendStream(chatHistory, prompt)
     }
 }

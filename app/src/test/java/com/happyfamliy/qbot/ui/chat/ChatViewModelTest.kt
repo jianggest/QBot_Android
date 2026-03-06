@@ -4,6 +4,7 @@ import com.happyfamliy.qbot.data.local.dao.MessageDao
 import com.happyfamliy.qbot.data.local.dao.SessionDao
 import com.happyfamliy.qbot.data.local.entity.MessageEntity
 import com.happyfamliy.qbot.domain.repository.GeminiRepository
+import com.happyfamliy.qbot.domain.usecase.FactExtractionUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -26,6 +27,7 @@ class ChatViewModelTest {
     private lateinit var sessionDao: SessionDao
     private lateinit var messageDao: MessageDao
     private lateinit var repository: GeminiRepository
+    private lateinit var factExtractionUseCase: FactExtractionUseCase
     private lateinit var viewModel: ChatViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -36,8 +38,10 @@ class ChatViewModelTest {
         sessionDao = mockk(relaxed = true)
         messageDao = mockk(relaxed = true)
         repository = mockk(relaxed = true)
+        // relaxed = true so it silently no-ops by default, matching background extraction behaviour
+        factExtractionUseCase = mockk(relaxed = true)
 
-        viewModel = ChatViewModel(sessionDao, messageDao, repository)
+        viewModel = ChatViewModel(sessionDao, messageDao, repository, factExtractionUseCase)
     }
 
     @After
@@ -46,18 +50,18 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `sendMessage clears input and sets generating`() = runTest(testDispatcher) {
+    fun `sendMessage clears input and sets isGenerating true then false after completion`() = runTest(testDispatcher) {
         viewModel.onInputTextChanged("Hello World")
-        
+
         coEvery { sessionDao.insertSession(any()) } returns 1L
         coEvery { messageDao.insertMessage(any()) } returns 1L
         coEvery { messageDao.getMessagesForSession(any()) } returns flowOf(
             listOf(MessageEntity(id = 1, sessionId = 1, role = "user", content = "Hello World"))
         )
         every { repository.sendMessageStream(any(), any()) } returns flowOf("Hi there!")
-        
+
         viewModel.sendMessage()
-        
+
         assertEquals("", viewModel.inputText.value)
         assertEquals(true, viewModel.isGenerating.value)
 
