@@ -5,6 +5,7 @@ import com.happyfamliy.qbot.data.local.dao.SessionDao
 import com.happyfamliy.qbot.data.local.entity.MessageEntity
 import com.happyfamliy.qbot.domain.repository.GeminiRepository
 import com.happyfamliy.qbot.domain.usecase.FactExtractionUseCase
+import com.happyfamliy.qbot.domain.usecase.SaveFactsUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -28,6 +29,7 @@ class ChatViewModelTest {
     private lateinit var messageDao: MessageDao
     private lateinit var repository: GeminiRepository
     private lateinit var factExtractionUseCase: FactExtractionUseCase
+    private lateinit var saveFactsUseCase: SaveFactsUseCase
     private lateinit var viewModel: ChatViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -40,8 +42,9 @@ class ChatViewModelTest {
         repository = mockk(relaxed = true)
         // relaxed = true so it silently no-ops by default, matching background extraction behaviour
         factExtractionUseCase = mockk(relaxed = true)
+        saveFactsUseCase = mockk(relaxed = true)
 
-        viewModel = ChatViewModel(sessionDao, messageDao, repository, factExtractionUseCase)
+        viewModel = ChatViewModel(sessionDao, messageDao, repository, factExtractionUseCase, saveFactsUseCase)
     }
 
     @After

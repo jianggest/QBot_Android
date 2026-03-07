@@ -8,6 +8,7 @@ import com.happyfamliy.qbot.data.local.entity.MessageEntity
 import com.happyfamliy.qbot.data.local.entity.SessionEntity
 import com.happyfamliy.qbot.domain.repository.GeminiRepository
 import com.happyfamliy.qbot.domain.usecase.FactExtractionUseCase
+import com.happyfamliy.qbot.domain.usecase.SaveFactsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ class ChatViewModel @Inject constructor(
     private val sessionDao: SessionDao,
     private val messageDao: MessageDao,
     private val geminiRepository: GeminiRepository,
-    private val factExtractionUseCase: FactExtractionUseCase
+    private val factExtractionUseCase: FactExtractionUseCase,
+    private val saveFactsUseCase: SaveFactsUseCase
 ) : ViewModel() {
 
     private var currentSessionId: Long? = null
@@ -96,11 +98,11 @@ class ChatViewModel @Inject constructor(
     private fun launchBackgroundExtraction(sessionId: Long) {
         viewModelScope.launch {
             try {
-                // Get fully updated history
                 val history = messageDao.getMessagesForSession(sessionId).first()
-                // the extraction is silently executed, we discard output here
-                // in reality we'd save to DB (addressed in Task 3.2)
-                factExtractionUseCase(history)
+                val extractedFacts = factExtractionUseCase(history)
+                if (extractedFacts.isNotEmpty()) {
+                    saveFactsUseCase(extractedFacts)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
