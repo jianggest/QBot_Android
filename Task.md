@@ -6,20 +6,23 @@
 * **架构模式**: MVVM (Model-View-ViewModel) + 单向数据流 (UDF)
 * **依赖注入**: Dagger Hilt (让 Agent 帮你管理复杂的系统级实例)
 * **本地存储**: Room Database (完美替代原生的 SQLite 裸写)
-* **AI SDK**: `com.google.ai.client.generativeai` (Google 官方 Android Gemini SDK)
+* **AI SDK**: `com.google.ai.client.generativeai` (Google 官方 Android Gemini SDK, Embedding 暂用 REST 补齐)
 * **异步与并发**: Kotlin Coroutines + Flow
-* **后台任务**: WorkManager (用于后台静默提取原子事实)
+* **后台任务**: WorkManager / ViewModel Coroutines
 
 ---
 
 ## 📅 阶段一：基础设施与“骨架”搭建 (Phase 1: Foundation)
 **目标**：搭建起 Android 工程骨架，配置好底层数据库和依赖。
 
-### ⬜ Task 1.1: 初始化工程与依赖
+### [x] Task 1.1: 初始化工程与依赖
+* **状态**：已完成。配置了 Compose, Hilt, Room, Gemini SDK, MockK 等。
 * **Agent 指令**：
   > “创建一个全新的 Android 项目，使用 Empty Compose Activity。在 `build.gradle.kts` 中配置以下依赖：Jetpack Compose 最新版, Room, Hilt, Google Generative AI Android SDK, ViewModel Compose, Coroutines。配置完整的包结构：`ui`, `data`, `domain`, `di`。”
 
-### ⬜ Task 1.2: 设计并实现 Room 数据库 (记忆持久化)
+
+### [x] Task 1.2: 设计并实现 Room 数据库 (记忆持久化)
+* **状态**：已完成。实现了 `SessionEntity`, `MessageEntity`, `FactEntity` 及其对应的 DAO。
 * **Agent 指令**：
   > “使用 Room 搭建本地数据库。
   > 1. 创建实体类 `SessionEntity` (id, title, createdAt, updatedAt)。
@@ -33,7 +36,8 @@
 ## 💬 阶段二：核心聊天流与 Gemini 集成 (Phase 2: Core AI Chat)
 **目标**：跑通与 Gemini 的基础对话，支持流式打字机效果。
 
-### ⬜ Task 2.1: 封装 Gemini API (Domain 层)
+### [x] Task 2.1: 封装 Gemini API (Domain 层)
+* **状态**：已完成。封装了 `GeminiRepository`，支持流式响应及历史上下文。
 * **Agent 指令**：
   > “在 `domain` 层创建一个 `GeminiRepository`。
   > 1. 初始化 `GenerativeModel`，配置 API Key（暂存放在 `local.properties` 中并通过 BuildConfig 读取）。
@@ -41,6 +45,7 @@
   > 3. 需要将本地的 `MessageEntity` 历史记录转换为 Gemini SDK 支持的 `Content` 格式，以实现上下文感知。”
 
 ### [x] Task 2.2: 构建聊天 UI 与 ViewModel (UI 层)
+* **状态**：已完成。实现了 `ChatScreen` 和 `ChatViewModel`，支持实时打字机效果。
 * **Agent 指令**：
   > “1. 创建 `ChatViewModel`，持有当前的会话状态（List<Message>）和输入框状态。
   > 2. 实现发送消息逻辑：保存用户消息到 Room -> 调用 Repository 获取流式响应 -> 实时更新 UI 状态 -> 接收完毕后保存 AI 消息到 Room。
@@ -51,14 +56,16 @@
 ## 🧠 阶段三：QBot 灵魂移植 —— 原子化事实提取与去重 (Phase 3: Smart Memory)
 **目标**：将 CLI 版最核心的 RAG 机制（事实提取与语义去重）在手机端跑通。
 
-### ⬜ Task 3.1: 事实提取逻辑 (后台分析)
+### [x] Task 3.1: 事实提取 logic (后台分析)
+* **状态**：已完成。引入 `GenerativeModelWrapper` 解决 mock 问题，并实现 `FactExtractionUseCase`。
 * **Agent 指令**：
   > “实现一个 `FactExtractionUseCase`。
   > 1. 定义一个特殊的 Prompt，要求模型对传入的对话上下文进行分析，提取出 JSON 格式的原子事实（包含 content 和 topic）。
   > 2. 约束输出格式为：`[{"fact": "...", "topic": "..."}]`。
   > 3. 在 `ChatViewModel` 中，当一轮对话结束（AI 回复完毕）后，启动一个后台协程调用此 UseCase，默默处理刚刚的对话内容。”
 
-### ⬜ Task 3.2: 向量嵌入 (Embedding) 与语义去重计算
+### [x] Task 3.2: 向量嵌入 (Embedding) 与语义去重计算
+* **状态**：已完成。针对 SDK 缺失 `embedContent` 的问题采用了直接 REST API 调用的方案。实现了 `SaveFactsUseCase` 及其去重逻辑 (相似度 > 0.92)。
 * **Agent 指令**：
   > “实现嵌入和去重逻辑。
   > 1. 使用 Gemini 的 `embedding-001` 模型，将提取到的事实文本转换成 `FloatArray` (向量)。
@@ -114,7 +121,3 @@
   > 1. 在 AndroidManifest 中将其声明为 `android.service.voice.VoiceInteractionService`。
   > 2. 配置对应的 XML meta-data。
   > 3. 实现长按电源键或手势呼出时，直接弹出 QBot 的一个透明底部的 Compose 浮窗，允许用户快速输入语音或文本。”
-
-
-
-准备好开始了吗？如果确认无误，你可以直接复制 **Task 1.1** 给你的 Coding Agent，开启咱们的 Android 移植之旅了！
