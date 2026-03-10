@@ -1,6 +1,8 @@
 package com.happyfamliy.qbot.ui.chat
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,13 +25,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun ChatScreen(
@@ -48,7 +56,10 @@ fun ChatScreen(
             contentPadding = PaddingValues(16.dp)
         ) {
             items(messages) { message ->
-                MessageBubble(message = message)
+                MessageBubble(
+                    message = message,
+                    onDeleteConfirmed = { viewModel.deleteMessage(message.id) }
+                )
             }
         }
 
@@ -61,13 +72,32 @@ fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MessageBubble(message: ChatUiMessage) {
+fun MessageBubble(message: ChatUiMessage, onDeleteConfirmed: () -> Unit) {
     val isUser = message.role == "user"
     val backgroundBubbleColor = if (isUser) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
         MaterialTheme.colorScheme.surfaceVariant
+    }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("删除消息") },
+            text = { Text("确认删除这条消息吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDeleteConfirmed()
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("取消") }
+            }
+        )
     }
 
     Box(
@@ -79,12 +109,17 @@ fun MessageBubble(message: ChatUiMessage) {
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = backgroundBubbleColor,
-            tonalElevation = 2.dp
+            tonalElevation = 2.dp,
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { if (!message.isStreaming) showDeleteDialog = true }
+            )
         ) {
-            Text(
-                text = message.content,
+            MarkdownText(
+                markdown = message.content,
                 modifier = Modifier.padding(12.dp),
-                color = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodyMedium,
+                syntaxHighlightColor = MaterialTheme.colorScheme.secondary
             )
         }
     }

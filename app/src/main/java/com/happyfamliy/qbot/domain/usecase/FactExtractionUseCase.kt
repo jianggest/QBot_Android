@@ -1,5 +1,6 @@
 package com.happyfamliy.qbot.domain.usecase
 
+import android.util.Log
 import com.happyfamliy.qbot.data.local.entity.MessageEntity
 import com.happyfamliy.qbot.domain.repository.GenerativeModelWrapper
 import org.json.JSONArray
@@ -29,8 +30,8 @@ class FactExtractionUseCase @Inject constructor(
         val result = mutableListOf<ExtractedFact>()
         try {
             val text = jsonWrapper.generateContent(prompt) ?: "[]"
-            
-            // Extract the JSON array, handling optional markdown code fences
+            Log.d("QBot/FactExtraction", "Model raw response: $text")
+
             val startIndex = text.indexOf("[")
             val endIndex = text.lastIndexOf("]")
 
@@ -48,9 +49,11 @@ class FactExtractionUseCase @Inject constructor(
                         )
                     }
                 }
+            } else {
+                Log.w("QBot/FactExtraction", "No JSON array found in response: $text")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("QBot/FactExtraction", "Fact extraction failed", e)
         }
         return result
     }

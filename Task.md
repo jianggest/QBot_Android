@@ -51,6 +51,21 @@
   > 2. 实现发送消息逻辑：保存用户消息到 Room -> 调用 Repository 获取流式响应 -> 实时更新 UI 状态 -> 接收完毕后保存 AI 消息到 Room。
   > 3. 使用 Jetpack Compose 编写 `ChatScreen`。包含一个 `LazyColumn` (用于显示气泡列表) 和一个底部的输入框区域 (`OutlinedTextField` + 发送按钮)。”
 
+### [x] Task 2.3: 聊天记录持久化与会话恢复
+* **状态**：已完成。修复了每次进退应用/切换界面导致聊天记录丢失的问题。
+* **问题根因**：`ChatViewModel` 重建后 `currentSessionId` 归 null，每次 `sendMessage` 都会创建新 session，历史消息从不自动加载。
+* **修复内容**：
+  1. `SessionDao` 新增 `getLatestSession()` 查询。
+  2. `ChatViewModel.init {}` 中自动加载最近一次 session 及其消息，无历史则等用户首次发送时再创建。
+  3. 修复 `sendMessage` 中 `\${e.message}` 转义 bug，改为 `${e.message}`。
+
+### [x] Task 2.4: 长按气泡删除消息
+* **状态**：已完成。长按聊天气泡弹出确认对话框，确认后删除该条消息并同步从数据库移除。
+* **改动内容**：
+  1. `MessageDao` 新增 `deleteMessageById(id: Long)`。
+  2. `ChatViewModel` 新增 `deleteMessage(messageId: Long)`，删除后刷新消息列表。
+  3. `ChatScreen` 的 `MessageBubble` 添加长按手势，弹出 `AlertDialog` 确认；流式生成中的气泡（`id == -1`）不可删除。
+
 ---
 
 ## 🧠 阶段三：QBot 灵魂移植 —— 原子化事实提取与去重 (Phase 3: Smart Memory)
@@ -106,11 +121,11 @@
 ## 🚀 阶段五：深度整合与体验打磨 (Phase 5: Native Assistant Polish)
 **目标**：它不再是个普通 App，而是真正的“系统级助手”。
 
-### ⬜ Task 5.1: Markdown 解析与富文本展示
+### [x] Task 5.1: Markdown 解析与富文本展示
 * **Agent 指令**：
   > “引入 `compose-markdown` 库（或使用 Android `Html.fromHtml` 的兼容方案）。改造 `ChatScreen` 中的消息气泡，使其完美渲染 Markdown 语法（包括加粗、列表、代码块高亮）。这对于 QBot 记笔记的体验至关重要。”
 
-### ⬜ Task 5.2: 调试面板 (Debug Memory Dashboard)
+### [x] Task 5.2: 调试面板 (Debug Memory Dashboard)
 * **Agent 指令**：
   > “在 App 中添加一个侧边栏 (Drawer) 或设置入口，实现 QBot CLI 的 `debug-memory` 功能。
   > 创建一个 `MemoryScreen`，使用 Compose 读取 Room 数据库中的 `FactEntity`。用卡片或表格形式列出所有原子事实，显示其 Topic、内容、向量值（缩略）、访问次数。提供搜索和手动删除功能。”

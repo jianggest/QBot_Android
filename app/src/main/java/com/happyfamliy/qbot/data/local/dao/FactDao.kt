@@ -14,6 +14,9 @@ interface FactDao {
     @Query("SELECT * FROM facts ORDER BY lastUpdatedAt DESC")
     fun getAllFacts(): Flow<List<FactEntity>>
 
+    @Query("SELECT * FROM facts WHERE content LIKE '%' || :query || '%' OR topic LIKE '%' || :query || '%' ORDER BY lastUpdatedAt DESC")
+    fun searchFacts(query: String): Flow<List<FactEntity>>
+
     @Query("SELECT * FROM facts")
     suspend fun getAllFactsSync(): List<FactEntity>
 

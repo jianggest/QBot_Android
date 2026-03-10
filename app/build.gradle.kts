@@ -72,7 +72,9 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Room
     val roomVersion = "2.6.1"
@@ -113,4 +115,7 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.1.5")
     testImplementation("io.mockk:mockk:1.13.9")
     testImplementation("io.mockk:mockk-agent:1.13.9")
+    
+    // Markdown
+    implementation("com.github.jeziellago:compose-markdown:0.5.8")
 }

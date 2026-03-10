@@ -10,6 +10,7 @@ import com.happyfamliy.qbot.domain.repository.GeminiRepository
 import com.happyfamliy.qbot.domain.usecase.FactExtractionUseCase
 import com.happyfamliy.qbot.domain.usecase.SaveFactsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,17 @@ class ChatViewModel @Inject constructor(
 
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val latestSession = sessionDao.getLatestSession()
+            if (latestSession != null) {
+                currentSessionId = latestSession.id
+                reloadMessagesFromDb(latestSession.id)
+                Log.d("QBot/Session", "Restored session ${latestSession.id}")
+            }
+        }
+    }
 
     fun onInputTextChanged(text: String) {
         _inputText.value = text
@@ -87,7 +99,7 @@ class ChatViewModel @Inject constructor(
                 launchBackgroundExtraction(sessionId)
                 
             } catch (e: Exception) {
-                updateStreamingMessage(currentStreamingText + "\n[System Error]: \${e.message}")
+                updateStreamingMessage(currentStreamingText + "\n[System Error]: ${e.message}")
             } finally {
                 reloadMessagesFromDb(sessionId)
                 _isGenerating.value = false
@@ -95,16 +107,28 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun deleteMessage(messageId: Long) {
+        viewModelScope.launch {
+            messageDao.deleteMessageById(messageId)
+            currentSessionId?.let { reloadMessagesFromDb(it) }
+        }
+    }
+
     private fun launchBackgroundExtraction(sessionId: Long) {
         viewModelScope.launch {
             try {
                 val history = messageDao.getMessagesForSession(sessionId).first()
+                Log.d("QBot/Extraction", "Starting fact extraction for ${history.size} messages")
                 val extractedFacts = factExtractionUseCase(history)
+                Log.d("QBot/Extraction", "Extracted ${extractedFacts.size} facts: $extractedFacts")
                 if (extractedFacts.isNotEmpty()) {
                     saveFactsUseCase(extractedFacts)
+                    Log.d("QBot/Extraction", "Facts saved successfully")
+                } else {
+                    Log.d("QBot/Extraction", "No facts extracted, skipping save")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("QBot/Extraction", "Background extraction failed", e)
             }
         }
     }
